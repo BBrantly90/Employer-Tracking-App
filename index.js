@@ -171,10 +171,92 @@ var employee_tracker = function () {
                         }
                     },
                     {
-                        
+                        // Adds Employee Manager
+                        type: 'input',
+                        name: 'manager',
+                        message: 'Who is the employees manager?',
+                        validate: managerInput => {
+                            if (managerInput) {
+                                return true;
+                            } else {
+                                console.log('Please Add A Manager!');
+                                return false;
+                            }
+                        }
                     }
-                ])
-            })
+                ]).then((answers) => {
+                    // Compares result and stores it into the variable
+                    for (var i = 0; i < result.length; i++) {
+                        if (result[i].title === answers.role) {
+                            var role = result[i];
+                        }
+                    }
+
+                    db.query('INSERT INTO employee (first_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [answers.firstName, answers.lastName, role.id, answers.manager.id], (err, result) => {
+                        if (err) throw err;
+                        console.log('Added ${answers.firstName} ${answers.lastName} to the database.')
+                        employee_tracker();
+                    });
+                })
+            });
+        } else if (answers.prompt === 'Update An Employee Role') {
+            // Calling database to acquire roles and managers
+            db.query('SELECT * FROM employee, role', (err, result) => {
+                if (err) throw err;
+
+                inquirer.prompt([
+                    {
+                        // Choose Employee to Update
+                        type: 'list',
+                        name: 'employee',
+                        message: 'Which employees role do you want to update?',
+                        choices: () => {
+                            var array = [];
+                            for (var i = 0; i < result.length; i++) {
+                                array.push(result[i].last_name);
+                            }
+                            var employeeArray = [...new Set(array)];
+                            return employeeArray;
+                        }
+                    },
+                    {
+                        // Updates the New Role
+                        type: 'list',
+                        name: 'role',
+                        message: 'What is their new role?',
+                        choices: () => {
+                            var array = [];
+                            for (var i = 0; i < result.length; i++) {
+                                array.push(result[i].title);
+                            }
+                            var newArray = [...new Set(array)];
+                            return newArray;
+                        }
+                    }
+                ]).then((answers) => {
+                    // Compares result and stores it into the variable
+                    for (var i = 0; i < result.length; i++) {
+                        if (result[i].last_name === answers.employee) {
+                            var name = result[i];
+                        }
+                    }
+
+                    for (var i = 0; i < result.length; i++) {
+                        if (result[i].title === answers.role) {
+                            var role = result[i];
+                        }
+                    }
+
+                    db.query('UPDATE employee SET ? WHERE ?', [{role_id: role}, {last_name: name}], (err, result) => {
+                        if (err) throw err;
+                        console.log('Updated ${answers.employee} role to the database')
+                        employee_tracker();
+                    });
+                })
+            });
+        } else if (answers.prompt === 'Log Out') {
+            db.end();
+            console.log("Good-Bye!");
         }
     })
-}
+};
